@@ -1,9 +1,15 @@
 const express = require('express');
+const path = require('path');
 const healthController = require('../controllers/health');
+const { TasksRepository } = require('../repositories/tasksRepository');
+const { TasksFlow } = require('../flows/tasksFlow');
+const { Logger } = require('../utils/logger');
+const { TasksController } = require('../controllers/tasks');
+const { createTasksRouter } = require('./tasks');
 
 const router = express.Router();
-// Health endpoint
 
+// Health endpoint
 /**
  * @swagger
  * /:
@@ -31,5 +37,14 @@ const router = express.Router();
  *                   example: development
  */
 router.get('/', healthController.check.bind(healthController));
+
+// --- Tasks wiring (single canonical flow + repo) ---
+const logger = new Logger();
+const storageFilePath = path.join(__dirname, '../../data/tasks.json');
+const repo = new TasksRepository({ storageFilePath });
+const flow = new TasksFlow({ repo, logger });
+const controller = new TasksController({ flow });
+
+router.use('/tasks', createTasksRouter({ controller }));
 
 module.exports = router;
